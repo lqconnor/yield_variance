@@ -1,0 +1,6 @@
+rm(list = ls())
+cat("\f")
+getwd()
+setwd("C:/Users/Lawson/Google Drive/Daily Temp/")
+daily <- read.csv(file="daily_tmax.txt",header=T,sep = ",")
+utils::View(daily)
