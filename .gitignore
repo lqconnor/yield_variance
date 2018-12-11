@@ -3,3 +3,6 @@
 .RData
 .Ruserdata
 .secret
+dt_min.csv
+irrigated.csv
+weather.csv
