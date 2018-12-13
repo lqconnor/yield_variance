@@ -34,7 +34,7 @@ yield_c <- mutate(yield_c, short_desc = gsub("IRRIGATED - ACRES HARVESTED", "- I
 # Don't run unless you have to -----------------------------------------------------
 # Pulls harvested acres for corn and soybeans
 start_time <- Sys.time()
-svy_yr = c(list(1987:1990), list(1991:2002), list(2003:2016))
+svy_yr = c(list(1987:1996), list(1997:2006), list(2007:2016))
 prod_c <- map_df(svy_yr, function(x) {
   params = list(source_desc = "SURVEY",
                 year = x,
