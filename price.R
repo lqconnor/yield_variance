@@ -21,18 +21,18 @@ deflator <- read_csv("../../Data/farmincome_wealthstatisticsdata_november2018.cs
 
 # Get and clean NASS API data -------------------------------------------------------------
 # List parameters of interest to feed to rnassqs package
-svy_yr = 1950
+svy_yr = c(1950:2017)
 params = list(source_desc = "SURVEY", 
               state_alpha = "US",
-              year__GE = svy_yr,
-              reference_period_desc = "MARKETING YEAR",
+              year = svy_yr,
+              reference_period_desc = c("MARKETING YEAR"),
               freq_desc = "ANNUAL",
               sector_desc = "CROPS")
 
 # Commodities and values of interest
 commodities <- c("CORN", "SOYBEANS")          # Commodities we want to keep
 vars <- c("PRICE RECEIVED")                                                                   # Specifies production variables we want to keep
-nass_cleaner <- c("ADJUSTED", "PARITY", "SWEET")
+nass_cleaner <- c("ADJUSTED", "PARITY", "SWEET", "SILAGE")
 
 # Feed parameters to rnassqs package
 price <- nassqs(params = params) %>%
@@ -45,7 +45,7 @@ price <- nassqs(params = params) %>%
   left_join(deflator, by = c("year" = "Year")) %>%
   rename(gdp_df = ChainType_GDP_Deflator)
 
-y_2017 <- filter(price,year == 2000, str_detect(short_desc, "CORN")) %>%
+y_2017 <- filter(price,year == 2017, str_detect(short_desc, "CORN")) %>%
   select(gdp_df) %>%
   pull(gdp_df)
 
@@ -73,11 +73,20 @@ price <- separate(price, short_desc, into = c("commodity", "description"), sep =
   mutate(t = year - 1949,
          t2 = t^2)
 
+# This is to try to generate the scaled yield data ----------------------------------------------
+p_c_2017 <- filter(price,year == 2017) %>%
+  select(corn) %>%
+  pull(corn)
+
+p_s_2017 <- filter(price,year == 2017) %>%
+  select(soybeans) %>%
+  pull(soybeans)
+
 detrend <- lm(corn ~ t + t2, data = price)
-price$dtrnd_c <- detrend$resid
+price$dtrnd_c <- p_c_2017*(1 + detrend$resid/detrend$fitted.values)
 
 detrend <- lm(soybeans ~ t + t2, data = price)
-price$dtrnd_s <- detrend$resid
+price$dtrnd_s <- p_s_2017*(1 + detrend$resid/detrend$fitted.values)
 
 price1 <- filter(price, year > 1950)
 ggplot() +
@@ -86,10 +95,49 @@ ggplot() +
 ggplot() +
   geom_line(data = price1, aes(x=year, y=dtrnd_s, group = 1), color = "black")
 
-# Time series estimations
+# Time series estimations -----------------------------------------------
+# Pre 1994
 price1 <- filter(price, year < 1994)
-rd <- diff(price1$dtrnd_c, differences = 1)
+rd <- diff(price1$dtrnd_c, differences = 2)
+adf.test(rd)
 acf(rd)
 
-rd <- price1$dtrnd_c
-summary(r.arma <- arima(price1$dtrnd_c, order = C(1, 0, 1)))
+summary(r.arma <- arima(price1$dtrnd_c, order = c(1, 0, 1)))
+# The best fit (in terms of AIC) for the differenced, detrended, inflation adjusted corn price AFTER 1994 is the ARIMA(3,3,4)  
+arima(rd, order = c(1, 5, 0))
+
+# The best fit (in terms of AIC) for the differenced, detrended, inflation adjusted corn price BEFORE 1994 is the ARIMA(2,5,0)  
+# arima(0,10,0) better or the less that 1994 double differenced version
+# Dickey Fuller Test
+
+
+# Time series estimations
+# Post 2000
+price2 <- filter(price, year > 2000)
+rd <- diff(price2$dtrnd_c, differences = 3)
+adf.test(rd)
+acf(rd)
+arima(rd, order = c(0, 5, 0))
+
+
+# Analysis for soybean prices ---------------------------------------
+# Time series estimations
+# Pre 1994
+price1 <- filter(price, year < 1994)
+rd <- diff(price1$dtrnd_s, differences = 2)
+adf.test(rd)
+acf(rd)
+arima(rd, order = c(0, 10, 0))
+
+# The best fit (in terms of AIC) for the differenced, detrended, inflation adjusted corn price BEFORE 1994 is the ARIMA(2,5,0)  
+# arima(0,10,0) better or the less that 1994 double differenced version
+# Dickey Fuller Test
+
+
+# Time series estimations
+# Post 2000
+price2 <- filter(price, year > 2000)
+rd <- diff(price2$dtrnd_s, differences = 3)
+adf.test(rd)
+acf(rd)
+arima(rd, order = c(0, 4, 0))
