@@ -1,0 +1,47 @@
+---
+title: "Yield Varibility"
+author: "Lawson Connor"
+date: "December 20, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+Documenting the behavior of yield and prices since 1950.
+
+National prices of both corn and soybeans have exhibited behavior as shown:
+
+```{r, include = FALSE}
+source("price.R")
+source("yield_y.R")
+```
+## Corn yield and price behavior
+
+Price and yield behavior for corn since 1950
+
+```{r, echo=FALSE}
+price1 <- filter(price, year > 1950)
+ggplot() +
+  geom_line(data = price1, aes(x=year, y=dtrnd_c, group = 1), color = "black")
+
+yield1 <- filter(yield1, year > 1950)
+ggplot() +
+  geom_line(data = yield1, aes(x=year, y=dtrnd_y_c, group = 1), color = "black")
+```
+
+## Soybean yield and price behavior
+
+Price and yield behavior or soybeans since 1950
+
+```{r, echo=FALSE}
+ggplot() +
+  geom_line(data = price1, aes(x=year, y=dtrnd_s, group = 1), color = "black")
+
+ggplot() +
+  geom_line(data = yield1, aes(x=year, y=dtrnd_y_s, group = 1), color = "black")
+```
+

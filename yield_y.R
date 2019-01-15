@@ -1,25 +1,9 @@
 # Pre - Amble -----------------------------------------------------------------------------
-rm(list = ls())
-cat("\f")
-getwd()
-
 Sys.setenv(NASSQS_TOKEN = readLines(".secret"))
-
-#Check if packages installed, install missing packages and load all installed packages
-pckgs <- c("tidyverse", "rnassqs", "stargazer", "ggplot2", "tseries")
-lapply(pckgs, FUN = function(x) {
-  if (!require(x, character.only = TRUE)) {
-    install.packages(x, dependencies = TRUE)
-    library(x, character.only = TRUE)
-  }
-})
-
-yr <- 1970
-yr_adj  <- yr-1
 
 # Get and clean NASS API data -------------------------------------------------------------
 # List parameters of interest to feed to rnassqs package
-svy_yr = c(yr:2017)
+svy_yr = c(1950:2017)
 params = list(source_desc = "SURVEY", 
               state_alpha = "US",
               year = svy_yr,
@@ -57,7 +41,7 @@ yield1 <- separate(yield1, short_desc, into = c("commodity", "description"), sep
   rename(m_year = `YIELD `) %>%
   mutate(commodity = tolower(commodity)) %>%
   spread(key = commodity, value = m_year) %>%
-  mutate(t = year - yr_adj,
+  mutate(t = year - 1949,
          t2 = t^2)
 
 # This is to try to generate the scaled yield data ----------------------------------------------
@@ -70,14 +54,14 @@ p_s_2017 <- filter(yield1,year == 2017) %>%
   pull(soybeans)
 
 detrend_y <- lm(corn ~ t + t2, data = yield1)
-yield1$dtrnd_c <- p_c_2017*(1 + detrend_y$resid/detrend_y$fitted.values)
+yield1$dtrnd_y_c <- p_c_2017*(1 + detrend_y$resid/detrend_y$fitted.values)
 
 detrend_y <- lm(soybeans ~ t + t2, data = yield1)
-yield1$dtrnd_s <- p_s_2017*(1 + detrend_y$resid/detrend_y$fitted.values)
+yield1$dtrnd_y_s <- p_s_2017*(1 + detrend_y$resid/detrend_y$fitted.values)
 
-yield1 <- filter(yield1, year > yr)
+yield1 <- filter(yield1, year > 1950)
 ggplot() +
-  geom_line(data = yield1, aes(x=year, y=corn, group = 1), color = "black")
+  geom_line(data = yield1, aes(x=year, y=dtrnd_y_c, group = 1), color = "black")
 
 ggplot() +
-  geom_line(data = yield1, aes(x=year, y=soybeans, group = 1), color = "black")
+  geom_line(data = yield1, aes(x=year, y=dtrnd_y_s, group = 1), color = "black")
